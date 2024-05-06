@@ -1,9 +1,6 @@
 # OS2Web key
 
-Key stuff for OS2Web.
-
-Implements certificate key providers for [the Key module](https://www.drupal.org/project/key). A *certificate key
-provider* provides a passwordless certificate.
+Keys for OS2Web.
 
 ## Installation
 
@@ -12,11 +9,11 @@ composer require os2web/os2web_key
 drush pm:install os2web_key
 ```
 
-## Usage
+## Key types
 
-Go to `/admin/config/system/keys` and add a key with Key type "Certificate" and one of the following key providers:
+### Certificate
 
-* Certificate (file): Provides a certificate stored in the local file system.
+`@todo`
 
 ## Example
 
