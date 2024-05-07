@@ -1,6 +1,6 @@
 # OS2Web key
 
-Keys for OS2Web.
+Key types and providers for OS2Web built on the [Key module](https://www.drupal.org/project/key).
 
 ## Installation
 
@@ -13,21 +13,93 @@ drush pm:install os2web_key
 
 ### Certificate
 
-`@todo`
+This key type handles [PKCS 12](https://en.wikipedia.org/wiki/PKCS_12) or [Privacy-Enhanced Mail
+(PEM)](https://en.wikipedia.org/wiki/Privacy-Enhanced_Mail) certificate with an optional password (passphrase).
 
-### OpenID Connect
+Use in a form:
 
-`@todo`
+``` php
+$form['key'] => [
+ '#type' => 'key_select',
+ '#key_filters' => [
+   'type' => 'os2web_key_certificate',
+ ],
+];
+```
 
-## Example
+The [`CertificateHelper`](https://github.com/OS2web/os2web_key/blob/main/src/CertificateHelper.php) can be used to get
+the actual certificates (parts):
 
-`@todo`
+``` php
+<?php
+
+use Drupal\os2web_key\CertificateHelper;
+use Drupal\key\KeyRepositoryInterface;
+
+// Use dependency injection for this.
+/** @var KeyRepositoryInterface $repository */
+$repository = \Drupal::service('key.repository');
+/** @var CertificateHelper $helper */
+$helper = \Drupal::service(CertificateHelper::class);
+
+// Use `drush key:list` to list your keys.
+$key = $repository->getKey('my_key');
+
+// Get the actual passwordless certificates.
+$certificates = $helper->getCertificates($key);
+```
+
+**Note**: The parsed certificates have no password.
+
+### OpenID Connect (OIDC)
+
+Example use in a form:
+
+``` php
+$form['key'] => [
+ '#type' => 'key_select',
+ '#key_filters' => [
+   'type' => 'os2web_key_oidc,
+ ],
+];
+```
+
+Get the OIDC config:
+
+``` php
+<?php
+
+use Drupal\key\KeyRepositoryInterface;
+use Drupal\os2web_key\Plugin\KeyType\OidcKeyType;
+
+// Use dependency injection for this.
+/** @var KeyRepositoryInterface $repository */
+$repository = \Drupal::service('key.repository');
+
+$key = $repository->getKey('openid_connect_ad');
+$values = json_decode($key->getKeyValue(), TRUE, 512, JSON_THROW_ON_ERROR);
+$discoveryUrl = $values[OidcKeyType::DISCOVERY_URL];
+$clientId = $values[OidcKeyType::CLIENT_ID];
+$clientSecret = $values[OidcKeyType::CLIENT_SECRET];
+```
+
+See [the Key Developer Guide](https://www.drupal.org/docs/contributed-modules/key/developer-guide) for details and more
+examples.
+
+## Providers
+
+### `@todo` Azure Key Vault
+
+<https://azure.microsoft.com/en-us/products/key-vault>
+
+### `@todo` Infisical
+
+<https://infisical.com/>
 
 ## Coding standards
 
-Our coding are checked by GitHub Actions (cf.
-[.github/workflows/pr.yml](.github/workflows/pr.yml)). Use the commands below to
-run the checks locally.
+Our coding are checked by GitHub Actions (cf. [.github/workflows/pr.yml](.github/workflows/pr.yml)). Use the commands
+below to run the checks locally.
 
 ### PHP
 
