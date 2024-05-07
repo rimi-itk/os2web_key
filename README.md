@@ -27,29 +27,32 @@ $form['key'] => [
 ];
 ```
 
-The [`CertificateHelper`](https://github.com/OS2web/os2web_key/blob/main/src/CertificateHelper.php) can be used to get
+The [`KeyHelper`](https://github.com/OS2web/os2web_key/blob/main/src/KeyHelper.php) can be used to get
 the actual certificates (parts):
 
 ``` php
 <?php
 
-use Drupal\os2web_key\CertificateHelper;
+use Drupal\os2web_key\KeyHelper;
 use Drupal\key\KeyRepositoryInterface;
 
 // Use dependency injection for this.
 /** @var KeyRepositoryInterface $repository */
 $repository = \Drupal::service('key.repository');
-/** @var CertificateHelper $helper */
-$helper = \Drupal::service(CertificateHelper::class);
+/** @var KeyHelper $helper */
+$helper = \Drupal::service(KeyHelper::class);
 
 // Use `drush key:list` to list your keys.
 $key = $repository->getKey('my_key');
+[
+  // Passwordless certificate.
+  CertificateKeyType::CERT => $certificate,
+  CertificateKeyType::PKEY => $privateKey,
+] = $helper->getCertificates($key);
 
-// Get the actual passwordless certificates.
-$certificates = $helper->getCertificates($key);
 ```
 
-**Note**: The parsed certificates have no password.
+**Note**: The parsed certificate has no password.
 
 ### OpenID Connect (OIDC)
 
@@ -77,10 +80,11 @@ use Drupal\os2web_key\Plugin\KeyType\OidcKeyType;
 $repository = \Drupal::service('key.repository');
 
 $key = $repository->getKey('openid_connect_ad');
-$values = json_decode($key->getKeyValue(), TRUE, 512, JSON_THROW_ON_ERROR);
-$discoveryUrl = $values[OidcKeyType::DISCOVERY_URL];
-$clientId = $values[OidcKeyType::CLIENT_ID];
-$clientSecret = $values[OidcKeyType::CLIENT_SECRET];
+[
+  OidcKeyType::DISCOVERY_URL => $discoveryUrl,
+  OidcKeyType::CLIENT_ID => $clientId,
+  OidcKeyType::CLIENT_SECRET => $clientSecret,
+] = $helper->getOidcValues($key);
 ```
 
 See [the Key Developer Guide](https://www.drupal.org/docs/contributed-modules/key/developer-guide) for details and more

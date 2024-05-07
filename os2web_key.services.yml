@@ -3,6 +3,6 @@ services:
     parent: logger.channel_base
     arguments: [ 'os2web_key' ]
 
-  Drupal\os2web_key\CertificateHelper:
+  Drupal\os2web_key\KeyHelper:
     arguments:
       - '@logger.channel.os2web_key'

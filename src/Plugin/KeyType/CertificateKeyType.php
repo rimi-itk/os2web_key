@@ -7,8 +7,8 @@ use Drupal\Core\DependencyInjection\DependencySerializationTrait;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\key\Plugin\KeyPluginFormInterface;
 use Drupal\key\Plugin\KeyTypeBase;
-use Drupal\os2web_key\CertificateHelper;
 use Drupal\os2web_key\Exception\RuntimeException;
+use Drupal\os2web_key\KeyHelper;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -27,12 +27,14 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 class CertificateKeyType extends KeyTypeBase implements KeyPluginFormInterface {
   use DependencySerializationTrait;
 
+  public const FORMAT_PEM = 'pem';
+  public const FORMAT_PFX = 'pfx';
+  public const CERT = 'cert';
+  public const PKEY = 'pkey';
+
   private const PASSPHRASE = 'passphrase';
   private const INPUT_FORMAT = 'input_format';
   private const OUTPUT_FORMAT = 'output_format';
-
-  private const FORMAT_PEM = 'pem';
-  private const FORMAT_PFX = 'pfx';
 
   /**
    * Constructor.
@@ -41,7 +43,7 @@ class CertificateKeyType extends KeyTypeBase implements KeyPluginFormInterface {
     array $configuration,
     $plugin_id,
     $plugin_definition,
-    private readonly CertificateHelper $certificateHelper,
+    private readonly KeyHelper $certificateHelper,
   ) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
   }
@@ -54,7 +56,7 @@ class CertificateKeyType extends KeyTypeBase implements KeyPluginFormInterface {
       $configuration,
       $plugin_id,
       $plugin_definition,
-      $container->get(CertificateHelper::class)
+      $container->get(KeyHelper::class)
     );
   }
 

@@ -2,22 +2,20 @@
 
 namespace Drupal\os2web_key;
 
+use Drupal\Core\DependencyInjection\DependencySerializationTrait;
 use Drupal\Core\Logger\LoggerChannelInterface;
 use Drupal\key\KeyInterface;
 use Drupal\os2web_key\Exception\RuntimeException;
 use Drupal\os2web_key\Plugin\KeyType\CertificateKeyType;
+use Drupal\os2web_key\Plugin\KeyType\OidcKeyType;
 use Psr\Log\LoggerAwareTrait;
 
 /**
- * Certificate helper.
+ * Key helper.
  */
-class CertificateHelper {
+class KeyHelper {
+  use DependencySerializationTrait;
   use LoggerAwareTrait;
-
-  protected const FORMAT_PEM = 'pem';
-  protected const FORMAT_PFX = 'pfx';
-  protected const CERT = 'cert';
-  protected const PKEY = 'pkey';
 
   public function __construct(
     LoggerChannelInterface $logger,
@@ -31,15 +29,15 @@ class CertificateHelper {
    * @param \Drupal\key\KeyInterface $key
    *   The key.
    *
-   * @return array<string, string>
+   * @return array{cert: string, pkey: string}
    *   The certificates.
    */
   public function getCertificates(KeyInterface $key): array {
-    $contents = $key->getKeyValue();
     $type = $key->getKeyType();
     if (!($type instanceof CertificateKeyType)) {
-      throw new RuntimeException(sprintf('Invalid key type: %s', $type::class));
+      throw $this->createSslRuntimeException(sprintf('Invalid key type: %s', $type::class), $key);
     }
+    $contents = $key->getKeyValue();
 
     return $this->parseCertificates(
       $contents,
@@ -50,9 +48,43 @@ class CertificateHelper {
   }
 
   /**
-   * Read a certificate.
+   * Get OIDC values from a key.
    *
-   * @return array<string, string>
+   * @param \Drupal\key\KeyInterface $key
+   *   The key.
+   *
+   * @return array{discovery_url: string, client_id: string, client_secret: string}
+   *   The OIDC values.
+   */
+  public function getOidcValues(KeyInterface $key): array {
+    $type = $key->getKeyType();
+    if (!($type instanceof OidcKeyType)) {
+      throw $this->createSslRuntimeException(sprintf('Invalid key type: %s', $type::class), $key);
+    }
+    $contents = $key->getKeyValue();
+
+    try {
+      $values = json_decode($contents, TRUE, 512, JSON_THROW_ON_ERROR);
+      foreach ([
+        OidcKeyType::DISCOVERY_URL,
+        OidcKeyType::CLIENT_ID,
+        OidcKeyType::CLIENT_SECRET,
+      ] as $name) {
+        if (!isset($values[$name])) {
+          throw $this->createRuntimeException(sprintf("Missing OIDC value: %s", $name), $key);
+        }
+      }
+      return $values;
+    }
+    catch (\JsonException $e) {
+      throw $this->createRuntimeException(sprintf("Cannot get OIDC values: %s", $e->getMessage()), $key);
+    }
+  }
+
+  /**
+   * Parse certificates.
+   *
+   * @return array{cert: string, pkey: string}
    *   The certificates.
    */
   public function parseCertificates(
@@ -62,17 +94,17 @@ class CertificateHelper {
     ?KeyInterface $key,
   ): array {
     $certificates = [
-      self::CERT => NULL,
-      self::PKEY => NULL,
+      CertificateKeyType::CERT => NULL,
+      CertificateKeyType::PKEY => NULL,
     ];
     switch ($format) {
-      case self::FORMAT_PFX:
+      case CertificateKeyType::FORMAT_PFX:
         if (!openssl_pkcs12_read($contents, $certificates, $passphrase)) {
           throw $this->createSslRuntimeException('Error reading certificate', $key);
         }
         break;
 
-      case self::FORMAT_PEM:
+      case CertificateKeyType::FORMAT_PEM:
         $certificate = @openssl_x509_read($contents);
         if (FALSE === $certificate) {
           throw $this->createSslRuntimeException('Error reading certificate', $key);
@@ -90,7 +122,7 @@ class CertificateHelper {
         break;
     }
 
-    if (!isset($certificates[self::CERT], $certificates[self::PKEY])) {
+    if (!isset($certificates[CertificateKeyType::CERT], $certificates[CertificateKeyType::PKEY])) {
       throw $this->createRuntimeException("Cannot read certificate parts 'cert' and 'pkey'", $key);
     }
 
@@ -101,19 +133,19 @@ class CertificateHelper {
    * Create a passwordless certificate.
    */
   public function createPasswordlessCertificate(array $certificates, string $format, ?KeyInterface $key): string {
-    $cert = $certificates[self::CERT] ?? NULL;
+    $cert = $certificates[CertificateKeyType::CERT] ?? NULL;
     if (!isset($cert)) {
       throw $this->createRuntimeException('Certificate part "cert" not found', $key);
     }
 
-    $pkey = $certificates[self::PKEY] ?? NULL;
+    $pkey = $certificates[CertificateKeyType::PKEY] ?? NULL;
     if (!isset($pkey)) {
       throw $this->createRuntimeException('Certificate part "pkey" not found', $key);
     }
 
     $output = '';
     switch ($format) {
-      case self::FORMAT_PEM:
+      case CertificateKeyType::FORMAT_PEM:
         $parts = ['', ''];
         if (!@openssl_x509_export($cert, $parts[0])) {
           throw $this->createSslRuntimeException('Cannot export certificate', $key);
@@ -121,20 +153,10 @@ class CertificateHelper {
         if (!@openssl_pkey_export($pkey, $parts[1])) {
           throw $this->createSslRuntimeException('Cannot export private key', $key);
         }
-        $extracerts = $certificates['extracerts'] ?? NULL;
-        if (is_array($extracerts)) {
-          foreach ($extracerts as $extracert) {
-            $part = '';
-            if (!@openssl_x509_export($extracert, $part)) {
-              throw $this->createSslRuntimeException('Cannot export certificate', $key);
-            }
-            // $parts[] = $part;
-          }
-        }
         $output = implode('', $parts);
         break;
 
-      case self::FORMAT_PFX:
+      case CertificateKeyType::FORMAT_PFX:
         if (!@openssl_pkcs12_export($cert, $output, $pkey, '')) {
           throw $this->createSslRuntimeException('Cannot export certificate', $key);
         }
