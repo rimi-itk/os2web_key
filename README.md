@@ -15,6 +15,10 @@ drush pm:install os2web_key
 
 `@todo`
 
+### OpenID Connect
+
+`@todo`
+
 ## Example
 
 `@todo`
