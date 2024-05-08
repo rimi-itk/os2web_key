@@ -108,6 +108,8 @@ class CertificateKeyType extends KeyTypeBase implements KeyPluginFormInterface {
    * {@inheritdoc}
    */
   public function validateConfigurationForm(array &$form, FormStateInterface $form_state): void {
+    // This function is deliberately left empty.
+    // Actual validation is performed by self::validateKeyValue(), which see.
   }
 
   /**
