@@ -1,0 +1,8 @@
+services:
+  logger.channel.os2web_key:
+    parent: logger.channel_base
+    arguments: [ 'os2web_key' ]
+
+  Drupal\os2web_key\KeyHelper:
+    arguments:
+      - '@logger.channel.os2web_key'
