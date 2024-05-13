@@ -2,6 +2,13 @@
 
 Key types and providers for OS2Web built on the [Key module](https://www.drupal.org/project/key).
 
+The OS2Web key module provides two _key types_, [Certificate](#certificate) and [OpenID Connect
+(OIDC)](#openid-connect-oidc). Two _key providers_, [Azure Key Vault](#azure-key-vault) and [Infisical](#infisical), are
+planned, but not yet implemented.
+
+See [the Key Developer Guide](https://www.drupal.org/docs/contributed-modules/key/developer-guide) for details in how to
+use keys in Drupal.
+
 ## Installation
 
 ``` shell
@@ -9,12 +16,18 @@ composer require os2web/os2web_key
 drush pm:install os2web_key
 ```
 
+Keys are managed on `/admin/config/system/keys`.
+
 ## Key types
 
 ### Certificate
 
 This key type handles [PKCS 12](https://en.wikipedia.org/wiki/PKCS_12) or [Privacy-Enhanced Mail
 (PEM)](https://en.wikipedia.org/wiki/Privacy-Enhanced_Mail) certificate with an optional password (passphrase).
+
+Managing the key:
+
+!["Certificate" key type form](docs/assets/key-type-certificate.png)
 
 Use in a form:
 
@@ -56,6 +69,10 @@ $key = $repository->getKey('my_key');
 
 ### OpenID Connect (OIDC)
 
+Managing the key:
+
+!["OpenID Connect (OIDC)" key type form](docs/assets/key-type-oidc.png)
+
 Example use in a form:
 
 ``` php
@@ -87,18 +104,15 @@ $key = $repository->getKey('openid_connect_ad');
 ] = $helper->getOidcValues($key);
 ```
 
-See [the Key Developer Guide](https://www.drupal.org/docs/contributed-modules/key/developer-guide) for details and more
-examples.
-
 ## Providers
 
-### `@todo` Azure Key Vault
+### Azure Key Vault
 
-<https://azure.microsoft.com/en-us/products/key-vault>
+`@todo` <https://azure.microsoft.com/en-us/products/key-vault>
 
-### `@todo` Infisical
+### Infisical
 
-<https://infisical.com/>
+`@todo` <https://infisical.com/>
 
 ## Coding standards
 
